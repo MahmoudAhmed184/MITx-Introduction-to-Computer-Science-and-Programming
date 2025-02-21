@@ -1,15 +1,7 @@
-# 6.0001 Problem Set 3
-#
-# The 6.0001 Word Game
-# Created by: Kevin Luu <luuk> and Jenna Wiens <jwiens>
-#
-# Name          : <your name>
-# Collaborators : <your collaborators>
-# Time spent    : <total time>
-
 import math
 import random
 import string
+from collections import Counter
 
 VOWELS = "aeiou"
 CONSONANTS = "bcdfghjklmnpqrstvwxyz"
@@ -42,16 +34,13 @@ SCRABBLE_LETTER_VALUES = {
     "x": 8,
     "y": 4,
     "z": 10,
+    "*": 0,
 }
 
-# -----------------------------------
-# Helper code
-# (you don't need to understand this helper code)
-
-WORDLIST_FILENAME = "words.txt"
+WORDLIST_FILENAME = "OpenCourseWare\Problem Set 3\words.txt"
 
 
-def load_words():
+def load_words() -> list[str]:
     """
     Returns a list of valid words. Words are strings of lowercase letters.
 
@@ -60,9 +49,7 @@ def load_words():
     """
 
     print("Loading word list from file...")
-    # inFile: file
     inFile = open(WORDLIST_FILENAME, "r")
-    # wordlist: list of strings
     wordlist = []
     for line in inFile:
         wordlist.append(line.strip().lower())
@@ -70,7 +57,7 @@ def load_words():
     return wordlist
 
 
-def get_frequency_dict(sequence):
+def get_frequency_dict(sequence: str | list) -> dict[str, int]:
     """
     Returns a dictionary where the keys are elements of the sequence
     and the values are integer counts, for the number of times that
@@ -80,21 +67,13 @@ def get_frequency_dict(sequence):
     return: dictionary
     """
 
-    # freqs: dictionary (element_type -> int)
     freq = {}
     for x in sequence:
         freq[x] = freq.get(x, 0) + 1
     return freq
 
 
-# (end of helper code)
-# -----------------------------------
-
-
-#
-# Problem #1: Scoring a word
-#
-def get_word_score(word, n):
+def get_word_score(word: str, n: int) -> int:
     """
     Returns the score for a word. Assumes the word is a
     valid word.
@@ -120,13 +99,12 @@ def get_word_score(word, n):
     returns: int >= 0
     """
 
-    pass  # TO DO... Remove this line when you implement this function
+    letter_score = sum(SCRABBLE_LETTER_VALUES.get(char, 0) for char in word.lower())
+    length_component = max(7 * len(word) - 3 * (n - len(word)), 1)
+    return letter_score * length_component
 
 
-#
-# Make sure you understand how this function works and what it does!
-#
-def display_hand(hand):
+def display_hand(hand: dict[str, int]) -> None:
     """
     Displays the letters currently in the hand.
 
@@ -140,16 +118,12 @@ def display_hand(hand):
     """
 
     for letter in hand.keys():
-        for j in range(hand[letter]):
-            print(letter, end=" ")  # print all on the same line
-    print()  # print an empty line
+        for _ in range(hand[letter]):
+            print(letter, end=" ")
+    print()
 
 
-#
-# Make sure you understand how this function works and what it does!
-# You will need to modify this for Problem #4.
-#
-def deal_hand(n):
+def deal_hand(n: int) -> dict[str, int]:
     """
     Returns a random hand containing n lowercase letters.
     ceil(n/3) letters in the hand should be VOWELS (note,
@@ -166,21 +140,20 @@ def deal_hand(n):
     hand = {}
     num_vowels = int(math.ceil(n / 3))
 
-    for i in range(num_vowels):
+    for _ in range(num_vowels - 1):
         x = random.choice(VOWELS)
         hand[x] = hand.get(x, 0) + 1
 
-    for i in range(num_vowels, n):
+    hand["*"] = 1
+
+    for _ in range(num_vowels, n):
         x = random.choice(CONSONANTS)
         hand[x] = hand.get(x, 0) + 1
 
     return hand
 
 
-#
-# Problem #2: Update a hand by removing letters
-#
-def update_hand(hand, word):
+def update_hand(hand: dict[str, int], word: str) -> dict[str, int]:
     """
     Does NOT assume that hand contains every letter in word at least as
     many times as the letter appears in word. Letters in word that don't
@@ -199,13 +172,16 @@ def update_hand(hand, word):
     returns: dictionary (string -> int)
     """
 
-    pass  # TO DO... Remove this line when you implement this function
+    hand = hand.copy()
+
+    for letter in word.lower():
+        if hand.get(letter, 0) > 0:
+            hand[letter] -= 1
+
+    return hand
 
 
-#
-# Problem #3: Test word validity
-#
-def is_valid_word(word, hand, word_list):
+def is_valid_word(word: str, hand: dict[str, int], word_list: list[str]) -> bool:
     """
     Returns True if word is in the word_list and is entirely
     composed of letters in the hand. Otherwise, returns False.
@@ -217,13 +193,22 @@ def is_valid_word(word, hand, word_list):
     returns: boolean
     """
 
-    pass  # TO DO... Remove this line when you implement this function
+    word = word.lower()
+    word_frequency = Counter(word)
+
+    for letter, count in word_frequency.items():
+        if hand.get(letter, 0) < count:
+            return False
+
+    if "*" in word:
+        possible_words = [word.replace("*", vowel) for vowel in VOWELS]
+        if any(possible_word in word_list for possible_word in possible_words):
+            return True
+
+    return word in word_list
 
 
-#
-# Problem #5: Playing a hand
-#
-def calculate_handlen(hand):
+def calculate_handlen(hand: dict[str, int]) -> int:
     """
     Returns the length (number of letters) in the current hand.
 
@@ -231,10 +216,10 @@ def calculate_handlen(hand):
     returns: integer
     """
 
-    pass  # TO DO... Remove this line when you implement this function
+    return sum(freq for freq in hand.values())
 
 
-def play_hand(hand, word_list):
+def play_hand(hand: dict[str, int], word_list: list[str]) -> int:
     """
     Allows the user to play the given hand, as follows:
 
@@ -264,48 +249,32 @@ def play_hand(hand, word_list):
 
     """
 
-    # BEGIN PSEUDOCODE <-- Remove this comment when you implement this function
-    # Keep track of the total score
+    total_score = 0
 
-    # As long as there are still letters left in the hand:
+    while calculate_handlen(hand) != 0:
+        print("current hand: ", end="")
+        display_hand(hand)
+        word = input("Enter word, or '!!' to indicate that you are finished: ").lower()
 
-    # Display the hand
+        if word == "!!":
+            print(f"Total score for this hand: {total_score}")
+            return total_score
 
-    # Ask user for input
+        if is_valid_word(word, hand, word_list):
+            word_score = get_word_score(word, len(hand))
+            total_score += word_score
+            print(f"{word} earned {word_score} points. Total score: {total_score}")
+        else:
+            print("That is not a valid word. Please choose another word.")
 
-    # If the input is two exclamation points:
+        hand = update_hand(hand, word)
 
-    # End the game (break out of the loop)
+    print(f"Ran out of letters.\nTotal score for this hand: {total_score} points")
 
-    # Otherwise (the input is not two exclamation points):
-
-    # If the word is valid:
-
-    # Tell the user how many points the word earned,
-    # and the updated total score
-
-    # Otherwise (the word is not valid):
-    # Reject invalid word (print a message)
-
-    # update the user's hand by removing the letters of their inputted word
-
-    # Game is over (user entered '!!' or ran out of letters),
-    # so tell user the total score
-
-    # Return the total score as result of function
+    return total_score
 
 
-#
-# Problem #6: Playing a game
-#
-
-
-#
-# procedure you will use to substitute a letter in a hand
-#
-
-
-def substitute_hand(hand, letter):
+def substitute_hand(hand: dict[str, int], letter: str) -> dict[str, int]:
     """
     Allow the user to replace all copies of one letter in the hand (chosen by user)
     with a new letter chosen from the VOWELS and CONSONANTS at random. The new letter
@@ -328,10 +297,23 @@ def substitute_hand(hand, letter):
     returns: dictionary (string -> int)
     """
 
-    pass  # TO DO... Remove this line when you implement this function
+    letter = letter.lower()
+
+    if letter not in hand:
+        return hand
+
+    substituted_hand = hand.copy()
+    letter_count = substituted_hand.pop(letter)
+
+    available_chars = set(string.ascii_lowercase) - set(hand.keys())
+
+    new_letter = random.choice([*available_chars])
+    substituted_hand[new_letter] = letter_count
+
+    return substituted_hand
 
 
-def play_game(word_list):
+def play_game(word_list: list[str]) -> int:
     """
     Allow the user to play a series of hands
 
@@ -362,16 +344,47 @@ def play_game(word_list):
     word_list: list of lowercase strings
     """
 
-    print(
-        "play_game not implemented."
-    )  # TO DO... Remove this line when you implement this function
+    total_score = 0
+    sub_used = False
+    replay_used = False
+
+    try:
+        num_hands = int(input("Enter total number of hands: "))
+    except ValueError:
+        print("Invalid input. Defaulting to 1 hand.")
+        num_hands = 1
+
+    while num_hands:
+        hand = deal_hand(HAND_SIZE)
+        print("Current hand: ", end="")
+        display_hand(hand)
+
+        if not sub_used:
+            want_to_substitute = input("Would you like to substitute a letter? ").lower()
+            if want_to_substitute == "yes":
+                letter = input("Which letter would you like to replace: ")
+                hand = substitute_hand(hand, letter)
+                sub_used = True
+
+        hand_score = play_hand(hand, word_list)
+        print("----------")
+        
+        if not replay_used:
+            want_to_replay = input("Would you like to replay the hand? ")
+            if want_to_replay == "yes":
+                replay_score = play_hand(hand, word_list)
+                print("----------")
+                hand_score = max(hand_score, replay_score)
+                replay_used = True
+
+        total_score += hand_score
+
+        num_hands -= 1
+
+    print(f"Total score over all hands: {total_score}")
+    return total_score
 
 
-#
-# Build data structures used for entire session and play game
-# Do not remove the "if __name__ == '__main__':" line - this code is executed
-# when the program is run directly, instead of through an import statement
-#
 if __name__ == "__main__":
     word_list = load_words()
     play_game(word_list)
